@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f7fa" />
+    <meta name="description" content="Visualize task dependencies, detect cycles, and plan a reliable execution order." />
+    <title>Task Dependency Planner</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#top" aria-label="Task Dependency Planner home">
+          <span class="brand-mark" aria-hidden="true">↗</span>
+          <span>Task Dependency Planner</span>
+        </a>
+        <div class="header-actions">
+          <button class="button button-secondary" id="examples-button" type="button"><span aria-hidden="true">▦</span> Load example</button>
+          <button class="button button-quiet" id="reset-button" type="button"><span aria-hidden="true">↺</span> Reset project</button>
+        </div>
+      </header>
+
+      <main id="top">
+        <section class="intro">
+          <div>
+            <p class="eyebrow">PROJECT PLANNER <span class="eyebrow-dot"></span> GRAPH ANALYSIS</p>
+            <h1>Task Dependency Planner</h1>
+            <p class="subtitle">Visualize dependencies. Detect cycles. Plan execution.</p>
+          </div>
+          <div class="local-badge"><span class="status-dot"></span> Saved in this browser</div>
+        </section>
+
+        <section class="summary-grid" aria-label="Project summary">
+          <article class="summary-card"><span class="summary-icon icon-blue" aria-hidden="true">▤</span><div><p>Total tasks</p><strong id="task-count">0</strong></div></article>
+          <article class="summary-card"><span class="summary-icon icon-violet" aria-hidden="true">⤷</span><div><p>Dependencies</p><strong id="dependency-count">0</strong></div></article>
+          <article class="summary-card"><span class="summary-icon icon-green" aria-hidden="true">◉</span><div><p>Cycle status</p><strong class="summary-state" id="cycle-status">No cycle</strong></div></article>
+          <article class="summary-card"><span class="summary-icon icon-amber" aria-hidden="true">☷</span><div><p>Execution status</p><strong class="summary-state" id="execution-status">Ready to plan</strong></div></article>
+        </section>
+
+        <section class="workspace" aria-label="Task planning workspace">
+          <aside class="panel task-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">WORKSPACE</p><h2>Tasks</h2></div>
+              <span class="count-pill" id="list-count">0</span>
+            </div>
+            <form id="task-form" class="task-form" novalidate>
+              <div class="form-title-row"><h3 id="form-heading">Add a task</h3><button type="button" class="text-button hidden" id="cancel-edit">Cancel edit</button></div>
+              <label for="task-id">Task ID <span class="required-mark">*</span></label>
+              <input id="task-id" name="taskId" placeholder="e.g. design" maxlength="32" autocomplete="off" required />
+              <p class="field-hint">Use letters, numbers, hyphens, or underscores.</p>
+              <label for="task-name">Task name <span class="required-mark">*</span></label>
+              <input id="task-name" name="taskName" placeholder="e.g. Design system" maxlength="80" required />
+              <label for="task-description">Description <span class="optional-mark">OPTIONAL</span></label>
+              <textarea id="task-description" name="description" rows="2" maxlength="240" placeholder="A little context for this task"></textarea>
+              <label for="task-dependencies">Prerequisites <span class="optional-mark">SELECT ANY</span></label>
+              <select id="task-dependencies" name="dependencies" multiple size="4" aria-describedby="dependency-hint"></select>
+              <p class="field-hint" id="dependency-hint">Hold Ctrl (Windows) or ⌘ (Mac) to select more than one.</p>
+              <p class="form-message" id="form-message" role="alert" aria-live="polite"></p>
+              <button type="submit" class="button button-primary form-submit" id="submit-task">＋ Add task</button>
+            </form>
+            <div class="task-list-heading"><h3>Task list</h3><span id="list-caption">Start by adding a task</span></div>
+            <ul id="task-list" class="task-list" aria-label="Project tasks"></ul>
+            <div id="task-empty" class="task-empty"><span aria-hidden="true">◌</span><p>No tasks yet</p><small>Add a task above or load an example workflow.</small></div>
+          </aside>
+
+          <section class="panel graph-panel" aria-labelledby="graph-title">
+            <div class="panel-heading graph-heading">
+              <div><p class="eyebrow">DEPENDENCY MAP</p><h2 id="graph-title">Workflow graph</h2></div>
+              <div class="graph-actions">
+                <button class="icon-button" id="fit-graph" type="button" title="Fit graph to screen" aria-label="Fit graph to screen">⤢</button>
+                <button class="icon-button" id="reset-view" type="button" title="Reset graph layout" aria-label="Reset graph layout">⟳</button>
+              </div>
+            </div>
+            <div class="graph-toolbar">
+              <span class="graph-help"><span class="mini-arrow">→</span> Prerequisite comes first</span>
+              <div class="toggle-actions">
+                <button id="toggle-cycles" class="toggle-button" type="button" aria-pressed="true"><span class="legend-swatch swatch-cycle"></span> Cycle path</button>
+                <button id="toggle-order" class="toggle-button" type="button" aria-pressed="false"><span class="legend-swatch swatch-order"></span> Execution order</button>
+              </div>
+            </div>
+            <div class="graph-wrap">
+              <div id="cy" role="img" aria-label="Interactive directed graph of task dependencies"></div>
+              <div id="graph-empty" class="graph-empty"><div class="empty-graphic" aria-hidden="true"><span>○</span><i></i><span>○</span></div><h3>Your workflow will appear here</h3><p>Add tasks and connect their prerequisites to build a dependency map.</p></div>
+            </div>
+            <div class="graph-footer">
+              <div class="legend" aria-label="Graph legend"><span><i class="legend-node node-normal"></i> Task</span><span><i class="legend-node node-cycle"></i> In cycle</span><span><i class="legend-node node-order"></i> In plan</span><span><i class="legend-edge"></i> Dependency</span></div>
+              <div class="selected-task" id="selected-task"><span class="selected-indicator"></span><span id="selected-details">Select a task to view details</span></div>
+            </div>
+          </section>
+
+          <aside class="panel results-panel" aria-labelledby="results-title">
+            <div class="panel-heading"><div><p class="eyebrow">ANALYSIS</p><h2 id="results-title">Execution plan</h2></div><span class="analysis-mark" aria-hidden="true">⌁</span></div>
+            <div id="analysis-message" class="analysis-message" role="status" aria-live="polite"><span class="message-icon">i</span><p>Add tasks to calculate a valid order and parallel stages.</p></div>
+            <section class="result-section">
+              <div class="result-heading"><div><span class="result-kicker">01</span><h3>Execution order</h3></div><span id="order-count" class="result-meta">—</span></div>
+              <ol id="execution-order" class="execution-order"></ol>
+              <p id="order-empty" class="result-empty">Your ordered task plan will appear here.</p>
+            </section>
+            <section class="result-section stages-section">
+              <div class="result-heading"><div><span class="result-kicker">02</span><h3>Parallel stages</h3></div><span id="stage-count" class="result-meta">—</span></div>
+              <div id="stages-list" class="stages-list"></div>
+              <p id="stages-empty" class="result-empty">Tasks at the same depth can run in parallel.</p>
+            </section>
+            <div class="planning-note"><span aria-hidden="true">↗</span><p>Stages are a planning aid. This app does not run external jobs.</p></div>
+          </aside>
+        </section>
+        <footer class="app-footer"><span>Task Dependency Planner <span class="footer-separator">/</span> Problem Statement 74</span><span>All project data stays in this browser</span></footer>
+      </main>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+      <dialog id="examples-dialog" class="modal">
+        <form method="dialog"><button class="modal-close" aria-label="Close examples">×</button></form>
+        <p class="eyebrow">DEMO WORKFLOWS</p><h2>Load an example</h2><p class="modal-intro">Choose a project to see how dependencies shape the execution plan.</p>
+        <div class="example-options">
+          <button class="example-option" type="button" data-example="valid"><span class="example-symbol symbol-valid">✓</span><span><strong>Product launch</strong><small>A valid workflow with parallel frontend and backend work.</small></span><span class="option-arrow">→</span></button>
+          <button class="example-option" type="button" data-example="cycle"><span class="example-symbol symbol-cycle">↻</span><span><strong>Circular dependency</strong><small>A three-task cycle that blocks a valid execution order.</small></span><span class="option-arrow">→</span></button>
+        </div>
+      </dialog>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
